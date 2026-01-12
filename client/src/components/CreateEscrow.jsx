@@ -30,60 +30,119 @@ function CreateEscrow({ onDeploy }) {
   };
 
   return (
-    <div>
-      <h2>Create Escrow</h2>
+    /* STEP 1 — CENTER WRAPPER */
+    <div
+      style={{
+        display: "flex",
+        justifyContent: "center",
+        marginTop: "48px"
+      }}
+    >
+      {/* STEP 2 — CARD CONTAINER */}
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "420px",
+          margin: "0 auto",
+          background: "#020617",
+          border: "1px solid #1f2933",
+          borderRadius: "16px",
+          padding: "24px",
+          boxShadow: "0 20px 40px rgba(0,0,0,0.4)"
+        }}
+      >
+        <h2 style={{ marginBottom: "20px" }}>
+          Create Escrow
+        </h2>
 
-      {!deployed ? (
-        <>
-          <input
-            placeholder="Freelancer (Seller) Address"
-            value={seller}
-            onChange={(e) => setSeller(e.target.value)}
-          />
+        {!deployed ? (
+          <>
+            <input
+              placeholder="Freelancer (Seller) Address"
+              value={seller}
+              onChange={(e) => setSeller(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "10px",
+                marginBottom: "16px",
+                borderRadius: "8px",
+                border: "1px solid #1f2933",
+                background: "#020617",
+                color: "#e5e7eb"
+              }}
+            />
 
-          <br /><br />
+            <label>Design Milestone (%)</label>
+            <input
+              type="number"
+              value={designPercent}
+              onChange={(e) =>
+                setDesignPercent(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "10px",
+                marginTop: "6px",
+                marginBottom: "16px",
+                borderRadius: "8px",
+                border: "1px solid #1f2933",
+                background: "#020617",
+                color: "#e5e7eb"
+              }}
+            />
 
-          <label>Design Milestone (%)</label>
-          <input
-            type="number"
-            value={designPercent}
-            onChange={(e) =>
-              setDesignPercent(e.target.value)
-            }
-          />
+            <label>Development Milestone (%)</label>
+            <input
+              type="number"
+              value={developmentPercent}
+              onChange={(e) =>
+                setDevelopmentPercent(e.target.value)
+              }
+              style={{
+                width: "100%",
+                padding: "10px",
+                marginTop: "6px",
+                marginBottom: "20px",
+                borderRadius: "8px",
+                border: "1px solid #1f2933",
+                background: "#020617",
+                color: "#e5e7eb"
+              }}
+            />
 
-          <br /><br />
-
-          <label>Development Milestone (%)</label>
-          <input
-            type="number"
-            value={developmentPercent}
-            onChange={(e) =>
-              setDevelopmentPercent(e.target.value)
-            }
-          />
-
-          <br /><br />
-
-          <button onClick={handleDeploy}>
-            Deploy Escrow Contract
-          </button>
-        </>
-      ) : (
-        <div
-          style={{
-            marginTop: "20px",
-            padding: "15px",
-            background: "#022c22",
-            borderRadius: "8px",
-            color: "#22c55e"
-          }}
-        >
-          ✅ Escrow contract deployed successfully  
-          <br />
-          Awaiting buyer to fund escrow.
-        </div>
-      )}
+            <button
+              onClick={handleDeploy}
+              style={{
+                width: "100%",
+                padding: "12px",
+                borderRadius: "10px",
+                background: "#22d3ee",
+                color: "#020617",
+                fontWeight: "600",
+                border: "none",
+                cursor: "pointer"
+              }}
+            >
+              Deploy Escrow Contract
+            </button>
+          </>
+        ) : (
+          <div
+            style={{
+              marginTop: "12px",
+              padding: "16px",
+              background: "#022c22",
+              borderRadius: "10px",
+              color: "#22c55e",
+              textAlign: "center"
+            }}
+          >
+            ✅ Escrow contract deployed successfully  
+            <br />
+            Awaiting buyer to fund escrow.
+          </div>
+        )}
+      </div>
     </div>
   );
 }

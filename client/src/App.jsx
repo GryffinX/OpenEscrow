@@ -174,7 +174,9 @@ function App() {
             marginLeft: "84px",
             paddingTop: "96px",
             paddingLeft: "32px",
-            paddingRight: "32px"
+            paddingRight: "32px",
+            display:"grid",
+            placeItems:"centre"
           }}
 >
 
