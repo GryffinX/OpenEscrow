@@ -1,29 +1,29 @@
-import { useState } from "react";
 import { ethers } from "ethers";
 
 function ConnectWallet({ setProvider }) {
-  const [account, setAccount] = useState("");
-
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert("Please install MetaMask");
+      alert("MetaMask is not installed");
       return;
     }
 
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const address = await signer.getAddress();
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
 
-    setProvider(provider);
-    setAccount(address);
+      // Request wallet connection
+      await provider.send("eth_requestAccounts", []);
+
+      // IMPORTANT: store the provider object
+      setProvider(provider);
+    } catch (err) {
+      console.error("Wallet connection failed:", err);
+    }
   };
 
   return (
-    <div>
-      <h1>OpenEscrow</h1>
-      <button onClick={connectWallet}>Connect Wallet</button>
-      <p>{account}</p>
-    </div>
+    <button onClick={connectWallet}>
+      Connect Wallet
+    </button>
   );
 }
 
