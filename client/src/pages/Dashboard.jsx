@@ -31,6 +31,7 @@ function Dashboard({ escrows, setSelectedEscrow }) {
 
 
   return (
+    
     <div>
       {/* HEADER */}
       <div style={{ marginBottom: "24px" }}>
@@ -40,7 +41,7 @@ function Dashboard({ escrows, setSelectedEscrow }) {
         </p>
       </div>
     <input
-      placeholder="Search escrow registry..."
+      placeholder="Search Escrow registry..."
       value={search}
       onChange={(e) => setSearch(e.target.value)}
       style={{
