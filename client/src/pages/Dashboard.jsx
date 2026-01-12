@@ -149,33 +149,26 @@ function Dashboard({ escrows, setSelectedEscrow }) {
 
   /* -------------------- UI -------------------- */
   return (
-    
-    <div>
-      {/* HEADER */}
-      <div style={{ marginBottom: "24px" }}>
-        <h1 style={{ fontSize: "28px" }}>Escrow Registry</h1>
-        <p style={{ color: "#9ca3af", fontSize: "14px" }}>
-          Protocol Network: <b>Sepolia Testnet</b>
-        </p>
-      </div>
-    <input
-      placeholder="Search Escrow registry..."
-      value={search}
-      onChange={(e) => setSearch(e.target.value)}
-      style={{
-        width: "100%",
-        padding: "12px",
-        borderRadius: "12px",
-        background: "#0b1220",
-        border: "1px solid #1f2933",
-        color: "#fff",
-        marginBottom: "20px"
-      }}
-    />
-    <div style={{ display: "flex", gap: "16px", marginBottom: "24px" }}>
-      <div className="kpi">
-        <p>Total Value Locked</p>
-        <h2>{totalValueLocked} ETH</h2>
+    <div className="min-h-screen bg-[#05080f] text-white font-sans">
+      {/* TOP BAR */}
+      <div className="sticky top-0 z-40 border-b border-[#151a25] bg-[#05080f]/95 backdrop-blur-sm">
+        <div className="flex items-center justify-between px-6 py-3">
+          <div className="flex items-center gap-2 text-xs">
+            <span className="uppercase tracking-wider text-slate-500">{networkName}</span>
+            <span className="text-slate-700">/</span>
+            <span className="uppercase tracking-wider text-amber-500">Demo Environment</span>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
+              <span className="text-xs font-medium uppercase tracking-wide text-emerald-400">{networkName}</span>
+            </div>
+            <div className="flex items-center gap-2 rounded-lg border border-[#1a1f2e] bg-[#0b1018] px-3 py-1.5">
+              <Wallet size={14} className="text-cyan-400" />
+              <span className="font-mono text-sm text-white">{walletBalance}</span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <div className="p-6 lg:p-8">
@@ -343,6 +336,7 @@ function Dashboard({ escrows, setSelectedEscrow }) {
           </div>
         )}
       </div>
+
     </div>
     
   )
