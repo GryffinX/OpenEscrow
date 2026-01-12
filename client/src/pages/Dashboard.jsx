@@ -1,11 +1,41 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { ethers } from "ethers";
 
 function Dashboard({ escrows, setSelectedEscrow }) {
+  // 1. hooks
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [search, setSearch] = useState("");
+  const [walletBalance, setWalletBalance] = useState("—");
 
+  // 2. effects
+  useEffect(() => {
+    async function fetchBalance() {
+      if (!window.ethereum) return;
 
-  const filteredEscrows = escrows.filter((e) => {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+
+      const balance = await provider.getBalance(
+        await signer.getAddress()
+      );
+
+      setWalletBalance(
+        `${ethers.formatEther(balance).slice(0, 6)} ETH`
+      );
+    }
+
+    fetchBalance();
+  }, []);
+
+  // 3. derived values (MUST be before return)
+  const totalValueLocked = escrows
+    .filter((e) => e.state === "FUNDED" || e.state === "COMPLETED")
+    .reduce((sum, e) => {
+      const val = parseFloat(e.totalValue);
+      return sum + (isNaN(val) ? 0 : val);
+    }, 0);
+
+    const filteredEscrows = escrows.filter((e) => {
   const matchesSearch =
     e.freelancer.toLowerCase().includes(search.toLowerCase());
 
@@ -19,16 +49,6 @@ function Dashboard({ escrows, setSelectedEscrow }) {
 
   return e.state === statusFilter;
 });
-  const totalValueLocked = escrows
-    .filter((e) => e.state === "FUNDED" || e.state === "COMPLETED")
-    .reduce((sum, e) => {
-      const val = parseFloat(e.totalValue);
-      return sum + (isNaN(val) ? 0 : val);
-    }, 0);
-  const walletBalance = "— ETH";
-
-
-
 
   return (
     <div>
