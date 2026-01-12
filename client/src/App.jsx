@@ -6,6 +6,7 @@ import EscrowDetail from "./pages/EscrowDetail";
 import Sidebar from "./ui/Sidebar";
 import Reputation from "./pages/Reputation";
 import Disputes from "./pages/Disputes";
+import Landing from "./pages/Landing";
 
 function App() {
   const [provider, setProvider] = useState(null);
@@ -126,7 +127,7 @@ function App() {
   return (
     <div>
       {/* CONNECT WALLET (only before connection) */}
-      {!provider && <ConnectWallet setProvider={setProvider} />}
+      {!provider && <Landing setProvider={setProvider} />}
 
       {provider && (
         <>
