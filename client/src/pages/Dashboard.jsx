@@ -343,9 +343,6 @@ function Dashboard({ escrows, setSelectedEscrow }) {
           </div>
         )}
       </div>
-      <div className="bg-red-500 text-white p-6 text-3xl">
-  TAILWIND TEST
-</div>
     </div>
     
   )
