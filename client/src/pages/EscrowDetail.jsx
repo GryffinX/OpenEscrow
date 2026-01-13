@@ -8,8 +8,6 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
   const [showDisputeModal, setShowDisputeModal] = useState(false)
 
   if (!escrow) return null
-  const isFunded = Number(escrow?.totalValue || 0) > 0;
-
 
   const truncateAddress = (addr) => {
     if (!addr) return ""
@@ -401,41 +399,41 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
             </div>
           </div>
 
-        {/* Fund Escrow Section */}
-        {!isFunded && (
-          <div style={styles.card}>
-            <h3 style={styles.sectionTitle}>Fund Escrow</h3>
-            <div style={styles.inputWrapper}>
-              <label style={styles.inputLabel}>Amount</label>
-              <input
+          {/* Fund Escrow Section */}
+          {escrow.state === "AWAITING_PAYMENT" && (
+            <div style={styles.card}>
+              <h3 style={styles.sectionTitle}><b>CONFIRM </b>Fund Escrow:</h3>
+              <div style={styles.inputWrapper}>
+                <label style={styles.inputLabel}>Amount</label>
+                <input
+                  style={{
+                    ...styles.input,
+                    borderColor: amount ? "rgba(6, 182, 212, 0.3)" : "rgba(255, 255, 255, 0.08)",
+                  }}
+                  placeholder="0.00"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+                <span style={styles.inputSuffix}>ETH</span>
+              </div>
+              <button
                 style={{
-                  ...styles.input,
-                  borderColor: amount ? "rgba(6, 182, 212, 0.3)" : "rgba(255, 255, 255, 0.08)",
+                  ...styles.fundButton,
+                  opacity: !amount ? 0.5 : 1,
+                  cursor: !amount ? "not-allowed" : "pointer",
                 }}
-                placeholder="0.00"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-              />
-              <span style={styles.inputSuffix}>SHM</span>
+                disabled={!amount}
+                onClick={() => onFundEscrow(escrow.id, amount)}
+              >
+                Fund Escrow
+              </button>
             </div>
-            <button
-              style={{
-                ...styles.fundButton,
-                opacity: !amount ? 0.5 : 1,
-                cursor: !amount ? "not-allowed" : "pointer",
-              }}
-              disabled={!amount}
-              onClick={() => onFundEscrow(escrow.id, amount)}
-            >
-              Fund Escrow
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* Milestones Section */}
-        {isFunded && (
-          <div style={styles.card}>
-            <h3 style={styles.sectionTitle}>Milestones</h3>
+          {/* Milestones Section */}
+          {escrow.state === "FUNDED" && (
+            <div style={styles.card}>
+              <h3 style={styles.sectionTitle}>Milestones</h3>
 
               {/* Design Milestone */}
               <div style={styles.milestoneCard}>
