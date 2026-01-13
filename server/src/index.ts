@@ -1,21 +1,18 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-
-import escrowsRouter from "./routes/escrows.js";
-import { startEscrowListener } from "./indexer/escrowListener.js";
-
-dotenv.config();
+import routes from "./routes";
 
 const app = express();
-
 app.use(cors());
 app.use(express.json());
 
-app.use("/escrows", escrowsRouter);
+app.use("/api", routes);
 
-startEscrowListener();
+app.get("/health", (_, res) => {
+  res.send("OK");
+});
 
-app.listen(3001, () => {
-  console.log("Backend running on port 3001");
+app.listen(4000, () => {
+  console.log("Backend running on port 4000");
 });
