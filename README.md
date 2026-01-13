@@ -176,7 +176,9 @@ This allows OpenEscrow to combine trustless settlement with real-world privacy n
 3. Funds are frozen on-chain  
 4. Dispute context handled privately via Inc
 
-**⚠️ Scope & Limitations (Internal)**  
+---
+
+## **⚠️ Scope & Limitations (Internal)**  
 This project is a hackathon MVP, not a production system.
 
 **Not included by design:**
@@ -197,8 +199,9 @@ These are planned as future MVPs.
 - Frontend: React + ethers.js
 - Privacy Layer: Inco (confidential compute)
 
+---
 
-**✨ Conclusion**  
+## **✨ Conclusion**  
 OpenEscrow demonstrates how:
 - Smart contracts can replace centralized escrow platforms
 - Confidential compute can protect sensitive business data
