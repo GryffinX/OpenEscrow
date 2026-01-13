@@ -42,23 +42,38 @@ function Dashboard({ escrows, setSelectedEscrow }) {
 
   /* -------------------- WALLET BALANCE -------------------- */
   useEffect(() => {
-    async function fetchBalance() {
-      if (!window.ethereum) return
+  async function fetchBalance() {
+    try {
+      if (!window.ethereum) return;
 
-      const provider = new ethers.BrowserProvider(window.ethereum)
-      const signer = await provider.getSigner()
-      const balance = await provider.getBalance(await signer.getAddress())
+      const provider = new ethers.BrowserProvider(window.ethereum);
 
-      setWalletBalance(`${ethers.formatEther(balance).slice(0, 10)} SHM`)
+      // check if accounts are connected
+      const accounts = await provider.send("eth_accounts", []);
+      if (!accounts || accounts.length === 0) {
+        setWalletBalance("—");
+        return;
+      }
+
+      const balance = await provider.getBalance(accounts[0]);
+      const formatted = ethers.formatEther(balance);
+
+      setWalletBalance(`${Number(formatted).toFixed(4)} SHM`);
+    } catch (err) {
+      console.error("Failed to fetch balance:", err);
+      setWalletBalance("—");
     }
+  }
 
-    fetchBalance()
-    window.ethereum?.on("accountsChanged", fetchBalance)
+  fetchBalance();
 
-    return () => {
-      window.ethereum?.removeListener("accountsChanged", fetchBalance)
-    }
-  }, [])
+  window.ethereum?.on("accountsChanged", fetchBalance);
+
+  return () => {
+    window.ethereum?.removeListener("accountsChanged", fetchBalance);
+  };
+}, []);
+
 
   /* -------------------- HELPERS -------------------- */
   const totalValueLocked = escrows

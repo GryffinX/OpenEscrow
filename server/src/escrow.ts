@@ -1,6 +1,6 @@
 import { ethers } from "ethers";
 import type { InterfaceAbi } from "ethers";
-import { signer } from "./shardeum";
+import { provider } from "./shardeum";
 import escrowAbi from "../abi/escrow.abi.json";
 
 if (!process.env.ESCROW_ADDRESS) {
@@ -12,5 +12,5 @@ const abi = escrowAbi as InterfaceAbi;
 export const escrowContract = new ethers.Contract(
   process.env.ESCROW_ADDRESS,
   abi,
-  signer
+  provider
 );
