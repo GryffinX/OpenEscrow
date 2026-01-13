@@ -2,7 +2,7 @@
 
 ## Overview
 
-A Web3-native, wallet-authenticated escrow dApp for freelancers and project initiators. It enforces milestone-based payments, on-chain reputation, and decentralized dispute resolution using smart contracts. Users interact via wallets; all actions are on-chain or simulated as on-chain for UX clarity. Emphasizes that OpenEscrow is permissionless public infrastructure, one of many possible clients.
+A Web3-native, wallet-authenticated escrow dApp for freelancers and project initiators. It enforces milestone-based payments, on-chain reputation, and fully on-chain dispute resolution using smart contracts. Users interact exclusively via the MetaMask-injected provider; all actions are on-chain with real blockchain state and zero simulated states for UX. OpenEscrow is permissionless public infrastructure, one of many possible clients.
 
 ## App Shell
 
@@ -54,9 +54,9 @@ A Web3-native, wallet-authenticated escrow dApp for freelancers and project init
 
 * **Balance Synchronization (New)**
 
-  * The displayed ETH balance must always reflect the balance of the connected wallet, derived exclusively from the connected wallet provider (MetaMask-injected provider).
+  * The balance is derived exclusively from the MetaMask-injected provider and must be fetched directly via the provider, not via any internal BalanceService or framework-specific balance wrappers.
 
-  * Balances are fetched via provider.getBalance(accounts[0]).
+  * **Provider Initialization:** Initialize an ethers.BrowserProvider(window.ethereum) (or equivalent Web3 provider) and retrieve balances using provider.getBalance(accounts[0]). Format with ethers.formatEther for display.
 
   * Balances are refreshed after every confirmed transaction (tx.wait()), on chainChanged, on accountsChanged, and on new blocks (provider.on("block")).
 
@@ -68,219 +68,97 @@ A Web3-native, wallet-authenticated escrow dApp for freelancers and project init
 
   * **Funding and Creation Guarded by Live Balance:** Before escrow creation or funding actions are allowed, the app fetches live balance (provider.getBalance(accounts[0])) and blocks the action if insufficient funds exist. This ensures all funding and deployment use real ETH.
 
-### Features
+  * **Escrow Contract Balance Tracking (New):** Fetch and display the live balance of the escrow contract address (contractAddress) via provider.getBalance(contractAddress) and reflect on-chain balance changes in the UI.
 
-#### Landing Page (Web3 Messaging)
+  * **Invalid Escrow Guard:** If an escrow lacks a valid contract address, consider it invalid and disable its actions with a clear error message indicating the contract address is missing.
 
-* **What:** Verbalizes purpose and on-chain escrow flow; emphasizes decentralization, trustlessness, and the open-infrastructure framing.
+  * Note: Do not reference or rely on a BalanceService anywhere in the codebase. All balance-related logic must be implemented via direct provider calls as described above.
 
-* **UI:** Hero section with headline “Trustless Escrow Infrastructure for Freelancers.” Subtext mentions smart contracts, milestones, on-chain arbitration, and open-infrastructure framing. Diagram-style “How It Works” illustrating wallet-to-contract flows, milestones, and dispute resolution. Primary CTA: Connect Wallet; Secondary CTA: View Smart Contract Flow.
+## Features
 
-#### Wallet Connection Screen
+### UI Rendering Stabilization and Minimal Root (New)
 
-* **What:** Wallet-based authentication, network selection, and address display.
+*Goal:* Simplify and stabilize the render path to guarantee a clean, single-root React render before enabling full functionality.
 
-* **UI:**
+*Key Actions:*
 
-  * Wallet picker with MetaMask/WalletConnect style, network dropdown (select Mainnet or Sepolia), address preview “Connected as 0xA3…92F,” transaction status placeholders. Tooltips explain roles and edge states (e.g., insufficient funds).
+* Refactor the app to use one minimal React root with no conditional rendering at the root.
 
-  * Enhanced behavior: When a MetaMask-compatible wallet is available, the site should automatically prompt the user to connect their MetaMask account upon reaching this screen. If MetaMask is installed and connected, the app proceeds to the Dashboard. If MetaMask is not installed, the UI should gracefully fall back to WalletConnect as an alternative connection method and provide installation guidance for MetaMask.
+* Remove React.StrictMode and temporarily disable React Query (QueryClientProvider) until base UI renders without runtime errors.
 
-  * Status indicators reflect the current connection state (Connecting, Connected, Disconnected) and the active network.
+* Render the app with a single App component mounted unconditionally from main.tsx.
 
-* **Important non-custodial enforcement:** The client address is strictly the connected MetaMask account; there is no backend wallet or default signer involved.
+* Ensure only one React and react-dom version exists; all hooks (useEffect, useState, etc.) are imported directly from "react" and never accessed via dynamic or wrapped references.
 
-* **Flow:** User lands -> app detects MetaMask presence:
+* Temporarily disable or stub advanced providers (QueryClientProvider, wallet context, arbitration context) until the base UI renders.
 
-  * If MetaMask is available: automatically triggers MetaMask account connection prompt; upon user approval, the app detects network, shows connected address, and proceeds to Dashboard.
+* Replace all undefined or design-system components (e.g., Badge) with simple inline JSX elements (e.g., with inline styles).
 
-  * If MetaMask is not available: offer WalletConnect option; user can initiate connection via WalletConnect; on success, network and address are shown; proceed to Dashboard.
+* Guard every component against null or undefined data (wallet, provider, contractAddress) using early returns instead of partial renders.
 
-  * If the user needs to switch networks, guidance is provided and a network-switch action is offered.
+* Render static placeholders for Dashboard, Escrow Card, and Header first, then progressively re-enable MetaMask connection, balance fetching, and contract logic only after the app renders without runtime errors.
 
-* **Edge States:** Explicit handling and messaging for: MetaMask not installed, user rejection of connection, insufficient funds, and wrong network with actionable guidance.
+* Do not reference any BalanceService or abstracted hooks—use direct provider calls only after render stability is confirmed.
 
-* **Important note on behavior:** Do NOT auto-connect wallets on page load. Wallet detection may occur on load, but account authorization must only happen after an explicit user click. Implement in line with real dApp behavior (e.g., Uniswap-style wallet connection).
+* Ensure only a blank app initially, then static UI, followed by wallet connect, balances, and escrow logic as stability is verified.
 
-* **Account lifecycle:** Listen for account changes and update the client address accordingly:
+### React Runtime Integrity and Single-Instance Guarantee (New)
 
-  * ethereum.on("accountsChanged", handler)
+*Purpose:* Resolve runtime error Cannot read properties of null (reading 'useEffect') by enforcing a single React instance, correct hook imports, and a robust provider hierarchy.
 
-  * Update the displayed client address (and from-address for deployments) to accounts[0], or force a reconnect if needed.
+* Core Requirements:*
 
-* **Network Synchronization:** In addition to the wallet connection logic, the app continuously synchronizes the UI with MetaMask’s current chainId to ensure consistency across sessions and page visibility.
+* Ensure the application uses a single, consistent React instance across the entire codebase.
 
-* **Balance Display:** The UI should present the current ETH balance for the connected wallet, synchronized via the balance synchronization mechanism described above.
+* All React hooks (useEffect, useState, useMemo, useCallback, etc.) must be imported directly from "react" (e.g., import React, { useEffect, useState } from "react") and never accessed via a possibly-null or mismatched React reference (e.g., React.useEffect on a null dispatcher).
 
-#### dApp Dashboard (On-Chain View)
+* Verify React and ReactDOM versions are aligned and deduplicated (no multiple React copies in node_modules). Fail the build if multiple React versions are detected.
 
-* **What:** Central view of on-chain activity: Active Escrow Contracts, Pending Milestones, Locked Funds, Disputes, and verifiable reputation previews.
+* Confirm that QueryClientProvider from @tanstack/react-query is rendered inside a valid React component tree wrapped by a single <React.StrictMode> and at the root (e.g., main.tsx or App.tsx), not conditionally or outside render flow.
 
-* **UI:** Cards per escrow showing:
+* Remove any custom wrappers, mocks, or no-code abstractions that shadow or override React imports.
 
-  * Smart contract address (copyable)
+* Ensure the build does not mix ESM/CJS React bundles or dynamically inject React at runtime.
 
-  * Total value locked (ETH/TEST token)
+* Add a guard to fail build-time if multiple React versions are detected.
 
-  * Milestone status (progress bar)
+* Confirm the app runs with a single provider hierarchy so hooks resolve against a valid, non-null React dispatcher.
 
-  * Blockchain confirmation state (Pending/Confirmed)
+*Developer Guidance and Best Practices:*
 
-  * Quick actions: View Escrow, Raise Dispute, Approve Milestone (if eligible)
+* Explicitly import and declare all UI components used in the project to avoid implicit globals or shadowing.
 
-  * Reputation preview snippet linked to related contributions and contract addresses
+* Use a single root render path, typically in main.tsx, that mounts the app within <React.StrictMode><QueryClientProvider ...></React.StrictMode>.
 
-* **Flow:** User selects an escrow card -> opens detail; status updates reflect blockchain state (Pending → Confirmed).
+* Ensure no conditional rendering trees wrap the root provider in a way that would create multiple React roots or bypass the main render path.
 
-#### Create Escrow (Smart Contract Flow)
+* Add lint/build-time checks to flag:
 
-* **What:** Step-by-step flow to deploy escrow and fund it with enhanced reputation and edge-state considerations.
+  * Duplicate React/ReactDOM versions in node_modules.
 
-* **UI:** Steps:
+  * Any file that imports React via non-standard paths or uses React in a way that could be null-evaluated (e.g., React.useEffect guarded by runtime checks).
 
-  1. Freelancer wallet address input (recipient)
+  * Any dynamic injection of React at runtime or conditional initialization of the React tree.
 
-  2. Escrow contract deployment (copyable address after deploy)
+* Testing and validation:
 
-  3. Milestone definitions (titles, amounts, due blocks)
+  * Run npm ls react to verify a single version is used.
 
-  4. Fund locking transaction (amounts, token type)
+  * Ensure TypeScript or Babel configuration resolves to a single React runtime.
 
-  5. Reputation preview during creation (shows expected impact on initiator and freelancer scores via related contributing addresses)
+  * Validate that on initial load, useEffect and other hooks run within a valid React dispatcher by performing a smoke test of the app bootstrapping sequence.
 
-  6. Wallet confirmation screen with simulated gas estimate
+  * Add a build-time script or plugin that throws if multiple React versions are detected and integrate with CI.
 
-  7. Transaction hash display and “Awaiting block confirmation” state
+### Flow Compliance
 
-* **Flow:** User fills fields -> clicks Deploy → wallet modal pops for confirmation → deployment hash shown → after confirmation, milestones defined and funded appear on dashboard.
+* Ensure that the root rendering path is not wrapped in conditional logic that could cause the provider hierarchy to be created more than once or after some asynchronous condition resolves.
 
-* **Non-custodial deployment mandate:** All escrow creation and contract deployment transactions must be signed directly by the user’s wallet via MetaMask. The app must NOT use any server-side wallet, relayer, default signer, or platform-controlled account for deployment or funding.
+* Ensure all components rely on the same React instance for hook resolution and state management.
 
-* **Signer handling:** The connected MetaMask account must be used as the signer (from address) for the deployment transaction.
+### Edge Handling
 
-* **Client address usage:** The displayed “Client” in the UI, the from address for escrow deployment transactions, and the initiator stored in the escrow contract must all reflect the connected MetaMask account (accounts[0]).
-
-* **Flow adjustments:** On “Create Escrow” click, trigger a MetaMask confirmation popup; fail if MetaMask is disconnected or locked; the freelancer/contractor address continues to be taken from user input.
-
-* **Edge States:** Explicit handling and UI for Rejected, Insufficient Funds, Wrong Network, and Reverted Contracts with clear messaging and guidance.
-
-* **Account changes:** Deployment flow will reflect updated client address if accountsChanged occurs prior to deployment.
-
-* **Milestone Release Guard (New):** Milestone releases must be executed as on-chain transfers from the escrow contract to the stored freelancer address. UI actions that trigger milestone completion will initiate a contract call (e.g., releaseMilestone) which performs a payable transfer from the escrow contract to the freelancer. Milestone completion is only considered finalized when the transaction is mined and the on-chain state confirms the transfer.
-
-* **Zero-Amount Validation (New):** Milestone release transactions must validate non-zero transfer amounts at the contract level; attempts to release with zero value will be rejected by the contract.
-
-* **Balance Dependency (New):** The ability to release a milestone is constrained by the escrow contract holding sufficient funds for the milestone amount. If funds are insufficient, the contract reverts and provides a clear on-chain failure reason, which will be surfaced in the UI.
-
-* **On-Chain State Reliant (New):** The UI should rely on confirmed blockchain state (tx mined, event emitted) to reflect milestone release rather than UI-only flags. The balance and milestone status must update only after on-chain confirmation.
-
-* **Flow when releasing milestone:** User initiates milestone release -> MetaMask confirmation -> on-chain transfer from contract to freelancer -> tx mined -> milestone status updates to Confirmed on-chain -> UI reflects new state via provider event listeners.
-
-#### Escrow Detail (On-Chain Transparency)
-
-* **What:** Deep dive into a single escrow’s on-chain state.
-
-* **UI:**
-
-  * Copyable smart contract address
-
-  * Locked funds amount and token
-
-  * Milestone timeline with statuses and timestamps
-
-  * Action buttons:
-
-    * Release Milestone (if funded & due) [replaces “Approve Milestone” in cases where on-chain release is the mechanism]
-
-    * Raise Dispute (trigger arbitration)
-
-    * Submit Evidence (for Open/Evidence stage)
-
-  * Evidence/Evidence History panel with timestamps
-
-  * Arbitration flow visualization with explicit states:
-
-    * Open → Evidence → Voting → Resolved
-
-  * Immutable transaction history panel with mock/existing on-chain-like entries
-
-  * “View on block explorer” button (mock link)
-
-* **Flow:** User views details -> initiates milestone release or dispute -> wallet popup for transaction confirmation -> status updates (Pending/Confirmed/Disputed) and arbitration progress.
-
-#### On-Chain Reputation Profile
-
-* **What:** Wallet-based reputation derived from escrow outcomes with verifiability and actionable links.
-
-* **UI:**
-
-  * Wallet address header
-
-  * Reputation score (numeric or tiered) with verifiable badge
-
-  * Outcomes: Total completed escrows, disputes won/lost, average payout reliability
-
-  * Statement: “This reputation is portable and not owned by any platform.”
-
-  * History list of past escrows affecting score
-
-  * Link score to contributing contract addresses (clickable)
-
-  * Quick copy/link to individual escrow histories
-
-* **Flow:** User selects a wallet -> score renders from on-chain data (mocked if needed) -> can copy address or link to individual escrow histories.
-
-#### Role-Aware UI and Permissions
-
-* **Roles:**
-
-  * Initiator (Project Owner)
-
-  * Freelancer (Recipient)
-
-  * Arbitrator (Dispute Resolver)
-
-* **UI Behavior:**
-
-  * Actions are gated by role and escrow state.
-
-  * Initiator can create escrow, fund milestones, approve milestones, and raise disputes with evidence. Milestone release is an on-chain action that requires the Initiator’s wallet to fund and trigger the contract call.
-
-  * Freelancer can be recipient, approve milestones when due and funded, and raise disputes with evidence. Milestone approval is implied by on-chain release; UI should reflect on-chain state of milestone transfers.
-
-  * Arbitrator can view disputes, submit evidence, participate in voting once in Voting state.
-
-* **Tooltips:** Contextual tooltips explain why an action is enabled/disabled, and what each arbitration state means.
-
-* **Flow:** Role selection is inferred from wallet address mapping and displayed in the header; action buttons enable/disable based on role and state.
-
-#### Arbitration Flow (Visualized)
-
-* **States:** Open → Evidence → Voting → Resolved
-
-* **UI:**
-
-  * Visual progress bar and status chips for the arbitration case
-
-  * Evidence submission area with attachments-like metadata
-
-  * Voting panel with time limits and eligibility hints
-
-  * Final outcome displayed with timestamp and linked to dispute record
-
-* **Edge Handling:** If an arbitrator is not assigned or voting window lapses, UI shows guidance and default outcomes if applicable.
-
-#### On-Chain Identity and Linkage
-
-* **Verifiable Reputation:** Reputation scores are derived from on-chain data and linked contract contributions; scores are testable and verifiable via explorer-like endpoints (mocked but labeled).
-
-* **Contribution Linking:** Scores display related contributing contract addresses and allow navigation to escrow histories.
-
-#### Public-Infrastructure Framing and Copy Cues
-
-* **Footer:** Explicit framing that OpenEscrow is permissionless public infrastructure and that the UI is one of many possible clients.
-
-* **Copy Cues:** Clear indicators that contract addresses and transaction hashes are visible and that explorer URLs are mock placeholders for demonstration.
+* If any violation is detected (multiple React versions, non-imported hooks, incorrect provider nesting), fail the build with a descriptive error and provide remediation steps.
 
 ## User Flows
 
@@ -294,7 +172,7 @@ A Web3-native, wallet-authenticated escrow dApp for freelancers and project init
 
 4. System presents gas estimate, wallet confirmation, and transaction hash
 
-5. Transaction pending -> blockchain confirmation -> escrow appears in Dashboard with milestones, funds locked, and reputation links
+5. Transaction pending -> blockchain confirmation -> escrow contract address is emitted and appears in Dashboard with milestones, funds locked, and reputation links
 
 6. Milestone release flows on-chain: when a milestone is due and funded, the initiator triggers an on-chain release, transferring the milestone amount from the escrow contract to the freelancer. The UI updates only after the transaction is mined and the on-chain state reflects the transfer.
 
@@ -313,6 +191,8 @@ A Web3-native, wallet-authenticated escrow dApp for freelancers and project init
 ## State Management
 
 * Escrows array: [{id, contractAddress, freelancer, initiator, totalValue, milestones:[{id,title,amount,date,dueBlock,status}], state: Pending/Active/Completed/Disputed, confirmations}]
+
+  * Note: contractAddress is the sole source of truth for on-chain state; if missing or invalid, the escrow is considered invalid.
 
 * Milestones: [{id, title, amount, dueBlock, status}]
 
@@ -421,3 +301,62 @@ Notes on Enhancement Request Alignment with Specification
 * Balance Freshness: Balances are no longer cached or inferred; they are re-fetched after every relevant event (transaction mined, chain changes, new blocks) to align UI with on-chain state.
 
 * Gating and UX: All actions remain gated by network state and balance sufficiency with clear user guidance and one-click fixes where applicable.
+
+* Escrow backing: Every escrow is tied to a deployed on-chain contract; the contract address is the sole source of truth for vault balance, milestone funding, and releases.
+
+* Balance queries: Get both connected wallet balance and escrow contract balance using the MetaMask provider; refresh after mined transactions, chain changes, account changes, and new blocks.
+
+* Milestone releases: Enforced as on-chain transfers from the escrow contract to the freelancer; only reflect in UI after tx mined and events confirmed.
+
+* Reputations and completion: Derived strictly from confirmed on-chain events (escrow completed, funds released, disputes resolved).
+
+* Signer model: MetaMask is the only signer; no backend or alternative signer allowed.
+
+Error handling: Surface clear errors for missing contract addresses, failed transfers, or reverted transactions; ensure wallet balances always reflect on-chain reality.
+
+### Tailwind CSS Enhancement (New)
+
+To fix the Tailwind CSS build error related to a missing custom utility class shadow-glass, remove the invalid utility shadow-glass from all @apply statements and use standard Tailwind utilities instead.
+
+What to implement
+
+* In src/index.css, update the following:
+
+  * In the .glass-panel and .glass-button rules, REMOVE shadow-glass from the @apply line and replace with valid utilities.
+
+  * Replace:\
+    @apply bg-zinc-900/40 backdrop-blur-xl border border-white/10 shadow-glass;\
+    with:\
+    @apply bg-zinc-900/40 backdrop-blur-xl border border-white/10 shadow-xl shadow-inner;
+
+* Do NOT define or reference shadow-glass anywhere.
+
+* Ensure the Tailwind/PostCSS build completes successfully.
+
+* Apply the fix directly to the CSS file.
+
+Validation and safety
+
+* Build should pass without the previous missing utility error.
+
+* The glassy effect should render identically across environments supported by your project, leveraging existing Tailwind color tokens where possible.
+
+* If the project has a design system or tokens for shadows, align with those tokens to ensure visual consistency.
+
+Enhancement Implementation (Direct CSS Edit)
+
+* Explicitly edit src/index.css and adjust the @apply rules as described above.
+
+* Ensure that no shadow-glass utility is defined or used anywhere in the codebase.
+
+Replacement Guidance (For This Enhancement Request)
+
+* Remove all usage of the custom Tailwind class shadow-glass from the codebase.
+
+* Replace shadow-glass with standard Tailwind utilities: shadow-xl shadow-inner.
+
+* Ensure the build succeeds and no custom shadow utilities remain.
+
+* After replacement, search and update all components that previously used shadow-glass to use the new class combination (e.g., class="shadow-xl shadow-inner") to maintain the intended glassy look.
+
+Please implement these changes directly in the codebase as described.
