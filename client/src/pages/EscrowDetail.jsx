@@ -5,6 +5,7 @@ import { useState } from "react"
 function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFundEscrow }) {
   const [amount, setAmount] = useState("")
   const [hoveredButton, setHoveredButton] = useState(null)
+  const [showDisputeModal, setShowDisputeModal] = useState(false)
 
   if (!escrow) return null
   const isFunded = Number(escrow?.totalValue || 0) > 0;
@@ -286,58 +287,119 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
       justifyContent: "center",
       gap: "8px",
     },
+    modalOverlay: {
+      position: "fixed",
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.85)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+      backdropFilter: "blur(8px)",
+    },
+    modalCard: {
+      backgroundColor: "#111116",
+      border: "1px solid rgba(6, 182, 212, 0.2)",
+      borderRadius: "16px",
+      padding: "40px",
+      maxWidth: "400px",
+      width: "90%",
+      textAlign: "center",
+      boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+    },
+    modalIconWrapper: {
+      width: "72px",
+      height: "72px",
+      borderRadius: "50%",
+      backgroundColor: "rgba(6, 182, 212, 0.1)",
+      border: "1px solid rgba(6, 182, 212, 0.3)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      margin: "0 auto 24px",
+    },
+    modalTitle: {
+      color: "#ffffff",
+      fontSize: "20px",
+      fontWeight: "700",
+      marginBottom: "12px",
+      letterSpacing: "-0.02em",
+    },
+    modalText: {
+      color: "#9ca3af",
+      fontSize: "15px",
+      lineHeight: "1.6",
+      marginBottom: "28px",
+    },
+    modalButton: {
+      padding: "14px 32px",
+      backgroundColor: "#06b6d4",
+      border: "none",
+      borderRadius: "10px",
+      color: "#000000",
+      fontSize: "14px",
+      fontWeight: "700",
+      textTransform: "uppercase",
+      letterSpacing: "0.08em",
+      cursor: "pointer",
+      transition: "all 0.2s ease",
+    },
   }
 
   return (
-    <div style={styles.container}>
-      <div style={styles.wrapper}>
-        {/* Back Button */}
-        <button
-          style={{
-            ...styles.backButton,
-            color: hoveredButton === "back" ? "#06b6d4" : "#6b7280",
-          }}
-          onClick={onBack}
-          onMouseEnter={() => setHoveredButton("back")}
-          onMouseLeave={() => setHoveredButton(null)}
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-          Back
-        </button>
+    <>
+      <div style={styles.container}>
+        <div style={styles.wrapper}>
+          {/* Back Button */}
+          <button
+            style={{
+              ...styles.backButton,
+              color: hoveredButton === "back" ? "#06b6d4" : "#6b7280",
+            }}
+            onClick={onBack}
+            onMouseEnter={() => setHoveredButton("back")}
+            onMouseLeave={() => setHoveredButton(null)}
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" />
+            </svg>
+            Back
+          </button>
 
-        {/* Header Card */}
-        <div style={styles.headerCard}>
-          <div style={styles.header}>
-            <div style={styles.titleSection}>
-              <h1 style={styles.title}>Escrow Detail</h1>
-              <p style={styles.subtitle}>{truncateAddress(escrow.freelancer)}</p>
-            </div>
-            <div style={styles.statusBadge}>
-              <span style={styles.statusDot} />
-              {escrow.state?.replace("_", " ")}
+          {/* Header Card */}
+          <div style={styles.headerCard}>
+            <div style={styles.header}>
+              <div style={styles.titleSection}>
+                <h1 style={styles.title}>Escrow Detail</h1>
+                <p style={styles.subtitle}>{truncateAddress(escrow.freelancer)}</p>
+              </div>
+              <div style={styles.statusBadge}>
+                <span style={styles.statusDot} />
+                {escrow.state?.replace("_", " ")}
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Info Grid */}
-        <div style={styles.card}>
-          <div style={styles.infoGrid}>
-            <div style={styles.infoItem}>
-              <div style={styles.infoLabel}>Freelancer</div>
-              <div style={styles.infoValueSmall}>{truncateAddress(escrow.freelancer)}</div>
-            </div>
-            <div style={styles.infoItem}>
-              <div style={styles.infoLabel}>Design %</div>
-              <div style={styles.infoValue}>{escrow.designPercent}%</div>
-            </div>
-            <div style={styles.infoItem}>
-              <div style={styles.infoLabel}>Development %</div>
-              <div style={styles.infoValue}>{escrow.developmentPercent}%</div>
+          {/* Info Grid */}
+          <div style={styles.card}>
+            <div style={styles.infoGrid}>
+              <div style={styles.infoItem}>
+                <div style={styles.infoLabel}>Freelancer</div>
+                <div style={styles.infoValueSmall}>{truncateAddress(escrow.freelancer)}</div>
+              </div>
+              <div style={styles.infoItem}>
+                <div style={styles.infoLabel}>Design %</div>
+                <div style={styles.infoValue}>{escrow.designPercent}%</div>
+              </div>
+              <div style={styles.infoItem}>
+                <div style={styles.infoLabel}>Development %</div>
+                <div style={styles.infoValue}>{escrow.developmentPercent}%</div>
+              </div>
             </div>
           </div>
-        </div>
 
         {/* Fund Escrow Section */}
         {!isFunded && (
@@ -375,109 +437,145 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
           <div style={styles.card}>
             <h3 style={styles.sectionTitle}>Milestones</h3>
 
-            {/* Design Milestone */}
-            <div style={styles.milestoneCard}>
-              <div style={styles.milestoneHeader}>
-                <span style={styles.milestoneName}>Design</span>
-                <span
-                  style={{
-                    ...styles.milestoneStatus,
-                    color: escrow.designReleased ? "#22c55e" : "#eab308",
-                  }}
-                >
-                  {escrow.designReleased ? "✓ Completed" : "⏳ Pending"}
-                </span>
-              </div>
-              <div style={styles.progressBar}>
-                <div
-                  style={{
-                    ...styles.progressFill,
-                    width: escrow.designReleased ? "100%" : "0%",
-                    backgroundColor: escrow.designReleased ? "#22c55e" : "#06b6d4",
-                  }}
-                />
-              </div>
-              <div style={styles.milestoneInfo}>
-                <span style={styles.milestonePercent}>{escrow.designPercent}% of funds</span>
-                {!escrow.designReleased && (
-                  <button
+              {/* Design Milestone */}
+              <div style={styles.milestoneCard}>
+                <div style={styles.milestoneHeader}>
+                  <span style={styles.milestoneName}>Design</span>
+                  <span
                     style={{
-                      ...styles.releaseButton,
-                      backgroundColor: hoveredButton === "design" ? "#06b6d4" : "transparent",
-                      color: hoveredButton === "design" ? "#000" : "#06b6d4",
+                      ...styles.milestoneStatus,
+                      color: escrow.designReleased ? "#22c55e" : "#eab308",
                     }}
-                    onClick={() => onApproveMilestone(escrow.id, "design")}
-                    onMouseEnter={() => setHoveredButton("design")}
-                    onMouseLeave={() => setHoveredButton(null)}
                   >
-                    Release Design Payment
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Development Milestone */}
-            <div style={styles.milestoneCard}>
-              <div style={styles.milestoneHeader}>
-                <span style={styles.milestoneName}>Development</span>
-                <span
-                  style={{
-                    ...styles.milestoneStatus,
-                    color: escrow.developmentReleased ? "#22c55e" : "#eab308",
-                  }}
-                >
-                  {escrow.developmentReleased ? "✓ Completed" : "⏳ Pending"}
-                </span>
-              </div>
-              <div style={styles.progressBar}>
-                <div
-                  style={{
-                    ...styles.progressFill,
-                    width: escrow.developmentReleased ? "100%" : "0%",
-                    backgroundColor: escrow.developmentReleased ? "#22c55e" : "#06b6d4",
-                  }}
-                />
-              </div>
-              <div style={styles.milestoneInfo}>
-                <span style={styles.milestonePercent}>{escrow.developmentPercent}% of funds</span>
-                {escrow.designReleased && !escrow.developmentReleased && (
-                  <button
+                    {escrow.designReleased ? "✓ Completed" : "⏳ Pending"}
+                  </span>
+                </div>
+                <div style={styles.progressBar}>
+                  <div
                     style={{
-                      ...styles.releaseButton,
-                      backgroundColor: hoveredButton === "dev" ? "#06b6d4" : "transparent",
-                      color: hoveredButton === "dev" ? "#000" : "#06b6d4",
+                      ...styles.progressFill,
+                      width: escrow.designReleased ? "100%" : "0%",
+                      backgroundColor: escrow.designReleased ? "#22c55e" : "#06b6d4",
                     }}
-                    onClick={() => onApproveMilestone(escrow.id, "development")}
-                    onMouseEnter={() => setHoveredButton("dev")}
-                    onMouseLeave={() => setHoveredButton(null)}
-                  >
-                    Release Development Payment
-                  </button>
-                )}
+                  />
+                </div>
+                <div style={styles.milestoneInfo}>
+                  <span style={styles.milestonePercent}>{escrow.designPercent}% of funds</span>
+                  {!escrow.designReleased && (
+                    <button
+                      style={{
+                        ...styles.releaseButton,
+                        backgroundColor: hoveredButton === "design" ? "#06b6d4" : "transparent",
+                        color: hoveredButton === "design" ? "#000" : "#06b6d4",
+                      }}
+                      onClick={() => onApproveMilestone(escrow.id, "design")}
+                      onMouseEnter={() => setHoveredButton("design")}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      Release Design Payment
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Dispute Button */}
-            <button
-              style={{
-                ...styles.disputeButton,
-                backgroundColor: hoveredButton === "dispute" ? "rgba(239, 68, 68, 0.1)" : "transparent",
-              }}
-              onClick={() => onRaiseDispute(escrow.id)}
-              onMouseEnter={() => setHoveredButton("dispute")}
-              onMouseLeave={() => setHoveredButton(null)}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
+              {/* Development Milestone */}
+              <div style={styles.milestoneCard}>
+                <div style={styles.milestoneHeader}>
+                  <span style={styles.milestoneName}>Development</span>
+                  <span
+                    style={{
+                      ...styles.milestoneStatus,
+                      color: escrow.developmentReleased ? "#22c55e" : "#eab308",
+                    }}
+                  >
+                    {escrow.developmentReleased ? "✓ Completed" : "⏳ Pending"}
+                  </span>
+                </div>
+                <div style={styles.progressBar}>
+                  <div
+                    style={{
+                      ...styles.progressFill,
+                      width: escrow.developmentReleased ? "100%" : "0%",
+                      backgroundColor: escrow.developmentReleased ? "#22c55e" : "#06b6d4",
+                    }}
+                  />
+                </div>
+                <div style={styles.milestoneInfo}>
+                  <span style={styles.milestonePercent}>{escrow.developmentPercent}% of funds</span>
+                  {escrow.designReleased && !escrow.developmentReleased && (
+                    <button
+                      style={{
+                        ...styles.releaseButton,
+                        backgroundColor: hoveredButton === "dev" ? "#06b6d4" : "transparent",
+                        color: hoveredButton === "dev" ? "#000" : "#06b6d4",
+                      }}
+                      onClick={() => onApproveMilestone(escrow.id, "development")}
+                      onMouseEnter={() => setHoveredButton("dev")}
+                      onMouseLeave={() => setHoveredButton(null)}
+                    >
+                      Release Development Payment
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Dispute Button */}
+              <button
+                style={{
+                  ...styles.disputeButton,
+                  backgroundColor: hoveredButton === "dispute" ? "rgba(239, 68, 68, 0.1)" : "transparent",
+                }}
+                onClick={() => {
+                  onRaiseDispute(escrow.id)
+                  setShowDisputeModal(true)
+                }}
+                onMouseEnter={() => setHoveredButton("dispute")}
+                onMouseLeave={() => setHoveredButton(null)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="12" />
+                  <line x1="12" y1="16" x2="12.01" y2="16" />
+                </svg>
+                Raise Dispute
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showDisputeModal && (
+        <div style={styles.modalOverlay} onClick={() => setShowDisputeModal(false)}>
+          <div style={styles.modalCard} onClick={(e) => e.stopPropagation()}>
+            <div style={styles.modalIconWrapper}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" strokeWidth="2">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                <path d="M7 11V7a5 5 0 0 1 10 0v4" />
               </svg>
-              Raise Dispute
+            </div>
+            <h3 style={styles.modalTitle}>Dispute Raised</h3>
+            <p style={styles.modalText}>
+              Dispute Evidence is handled privately via{" "}
+              <span style={{ color: "#06b6d4", fontWeight: "600" }}>Inco</span>
+            </p>
+            <button
+              style={styles.modalButton}
+              onClick={() => setShowDisputeModal(false)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = "#0891b2"
+                e.currentTarget.style.transform = "scale(1.02)"
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = "#06b6d4"
+                e.currentTarget.style.transform = "scale(1)"
+              }}
+            >
+              Got it
             </button>
           </div>
-        )}
-      </div>
-    </div>
+        </div>
+      )}
+    </>
   )
 }
 
