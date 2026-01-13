@@ -3,6 +3,7 @@
 OpenEscrow is a minimal, milestone-based decentralized escrow system built on **Shardeum**.  
 It enables transparent, trustless escrow settlement using smart contracts, while preserving privacy for sensitive milestone and dispute data using **Inco**.
 
+### APP HOSTED LINK: ```https://openescorwclient.vercel.app/ ```
 ---
 
 ## 🚀 Problem Statement
