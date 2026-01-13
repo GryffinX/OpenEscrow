@@ -31,41 +31,24 @@ function App() {
   const loadOnChainEscrow = async () => {
     try {
       const d = await getEscrowDetails();
+      console.log("🔥 ONCHAIN DETAILS:", d);
+      console.log("🔥 totalAmount(ETH):", ethers.formatEther(d.totalAmount));
 
       const escrowFromChain = {
-        id: 1,
-        title: "OpenEscrow Contract",
+  id: 1,
+  title: "OpenEscrow Contract",
+  freelancer: d.seller,
 
-        // your dashboard uses freelancer for address display
-        freelancer: d.seller,
+  totalValue: ethers.formatEther(d.totalAmount),
+  fundsLocked: ethers.formatEther(d.totalAmount),
 
-        // UI-friendly ETH/SHM values
-        totalValue: ethers.formatEther(d.totalAmount),
-        fundsLocked: ethers.formatEther(d.totalAmount),
+  state: mapStateToLabel(d.state),
+  createdAt: Date.now(),
 
-        // Progress calculation (simple for demo)
-        progress: d.designReleased
-          ? d.developmentReleased
-            ? 100
-            : 66
-          : d.totalAmount === "0"
-            ? 0
-            : 33,
+  designReleased: d.designReleased,
+  developmentReleased: d.developmentReleased,
+};
 
-        // Map contract state -> your UI labels
-        state: mapStateToLabel(d.state),
-
-        // keep raw fields (useful in detail view)
-        buyer: d.buyer,
-        seller: d.seller,
-        totalAmountWei: d.totalAmount,
-        releasedAmountWei: d.releasedAmount,
-        designReleased: d.designReleased,
-        developmentReleased: d.developmentReleased,
-
-        // optional timestamp placeholder
-        createdAt: Date.now(),
-      };
 
       setEscrows([escrowFromChain]);
 
@@ -110,68 +93,68 @@ function App() {
 
   /* -------------------- MILESTONE APPROVAL (ON-CHAIN) -------------------- */
   const approveMilestone = async (escrowId, milestone) => {
-    try {
-      if (milestone === "design") {
-        const receipt = await releaseDesignOnChain();
-        alert("Design milestone released ✅ Tx: " + receipt.hash);
-      }
-
-      if (milestone === "development") {
-        const receipt = await releaseDevelopmentOnChain();
-        alert("Development milestone released ✅ Tx: " + receipt.hash);
-      }
-
-      await loadOnChainEscrow();
-    } catch (err) {
-      console.error("Milestone approval failed:", err);
-      alert(err.message);
+  try {
+    if (milestone === "design") {
+      const receipt = await releaseDesignOnChain();
+      alert("Design milestone released ✅ Tx: " + receipt.hash);
+    } else if (milestone === "development") {
+      const receipt = await releaseDevelopmentOnChain();
+      alert("Development milestone released ✅ Tx: " + receipt.hash);
     }
-  };
+
+    await loadOnChainEscrow(); // ✅ must refresh
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+};
 
   /* -------------------- FUND ESCROW (ON-CHAIN) -------------------- */
   const fundEscrow = async (escrowId, amount) => {
-    if (!amount || Number(amount) <= 0) {
-      alert("Enter valid amount");
-      return;
-    }
+  if (!amount || Number(amount) <= 0) {
+    alert("Enter valid amount");
+    return;
+  }
 
-    try {
-      const receipt = await fundEscrowOnChain(amount);
-      alert("Funded ✅ Tx: " + receipt.hash);
+  try {
+    const receipt = await fundEscrowOnChain(amount);
+    alert("Funded ✅ Tx: " + receipt.hash);
 
-      await loadOnChainEscrow();
-    } catch (err) {
-      console.error("Funding failed:", err);
-      alert(err.message);
-    }
-  };
+    // ✅ IMPORTANT: refresh chain state IMMEDIATELY
+    await loadOnChainEscrow();
+
+    // ✅ IMPORTANT: go back to detail view to see milestones
+    setView("detail");
+  } catch (err) {
+    console.error("Funding failed:", err);
+    alert(err.message);
+  }
+};
+
+
 
   /* -------------------- DEPLOY ESCROW (UI ONLY / DISABLE FOR NOW) -------------------- */
   const deployEscrow = ({ seller, designPercent, developmentPercent }) => {
-    alert(
-      "On-chain escrow deployment is not enabled yet.\n\nThis app currently reads one deployed escrow from .env."
-    );
-
-    // If later you build an EscrowFactory contract, this is where deployment will happen.
-    // For now, we keep the UI behavior minimal.
-    const newEscrow = {
-      id: Date.now(),
-      freelancer: seller,
-      designPercent,
-      developmentPercent,
-      designReleased: false,
-      developmentReleased: false,
-      totalValue: "0",
-      fundsLocked: "0",
-      state: "AWAITING_PAYMENT",
-      progress: 0,
-      createdAt: Date.now(),
-    };
-
-    setEscrows((prev) => [...prev, newEscrow]);
-    setSelectedEscrow(newEscrow);
-    setView("detail");
+  const newEscrow = {
+    id: Date.now(),
+    title: "New Escrow",
+    freelancer: seller,
+    designPercent,
+    developmentPercent,
+    designReleased: false,
+    developmentReleased: false,
+    totalValue: "0",
+    fundsLocked: "0",
+    state: "AWAITING_PAYMENT",
+    progress: 0,
+    createdAt: Date.now(),
   };
+
+  setEscrows((prev) => [newEscrow, ...prev]); // ✅ add to dashboard list
+  setSelectedEscrow(newEscrow);
+  setView("dashboard"); // ✅ go back and show it in dashboard
+};
+
 
   /* ------------------ UI ------------------ */
   return (

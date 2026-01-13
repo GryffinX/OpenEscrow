@@ -7,6 +7,8 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
   const [hoveredButton, setHoveredButton] = useState(null)
 
   if (!escrow) return null
+  const isFunded = Number(escrow?.totalValue || 0) > 0;
+
 
   const truncateAddress = (addr) => {
     if (!addr) return ""
@@ -338,7 +340,7 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
         </div>
 
         {/* Fund Escrow Section */}
-        {escrow.state === "AWAITING_PAYMENT" && (
+        {!isFunded && (
           <div style={styles.card}>
             <h3 style={styles.sectionTitle}>Fund Escrow</h3>
             <div style={styles.inputWrapper}>
@@ -352,7 +354,7 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
               />
-              <span style={styles.inputSuffix}>ETH</span>
+              <span style={styles.inputSuffix}>SHM</span>
             </div>
             <button
               style={{
@@ -369,7 +371,7 @@ function EscrowDetail({ escrow, onBack, onRaiseDispute, onApproveMilestone, onFu
         )}
 
         {/* Milestones Section */}
-        {escrow.state === "FUNDED" && (
+        {isFunded && (
           <div style={styles.card}>
             <h3 style={styles.sectionTitle}>Milestones</h3>
 
